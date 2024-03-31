@@ -10,8 +10,7 @@ metadata:
   name: u1
 spec:
   namespaces: ["test"]
-  clusterRole: tmp
-  #rules:
-  #  - apiGroups: [""]
-  #    resources: ["configmaps"]
-  #    verbs: ["get", "watch", "list"]
+  rules:
+    - apiGroups: [""]
+      resources: ["configmaps"]
+      verbs: ["get", "watch", "list"]

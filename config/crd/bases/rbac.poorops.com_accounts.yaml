@@ -35,13 +35,17 @@ spec:
             description: AccountSpec defines the desired state of Account
             properties:
               clusterRole:
+                description: the name of the specified clusterRole
                 type: string
               namespaces:
+                description: required.the namespace that needs to be accessed. at
+                  least one element should be filled in
                 items:
                   type: string
                 minItems: 1
                 type: array
               rules:
+                description: the specific permission content
                 items:
                   description: PolicyRule holds information that describes a policy
                     rule, but does not contain information about who the rule applies
@@ -97,9 +101,7 @@ spec:
             description: AccountStatus defines the observed state of Account
             properties:
               token:
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                  of cluster Important: Run "make" to regenerate code after modifying
-                  this file'
+                description: the access token for the account
                 type: string
             type: object
         type: object

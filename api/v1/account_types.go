@@ -26,17 +26,20 @@ import (
 
 // AccountSpec defines the desired state of Account
 type AccountSpec struct {
+	// required.the namespace that needs to be accessed.
+	// at least one element should be filled in
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
-	Namespaces  []string            `json:"namespaces"`
-	Rules       []rbacv1.PolicyRule `json:"rules,omitempty"`
-	ClusterRole string              `json:"clusterRole,omitempty"`
+	Namespaces []string `json:"namespaces"`
+	// the specific permission content
+	Rules []rbacv1.PolicyRule `json:"rules,omitempty"`
+	// the name of the specified clusterRole
+	ClusterRole string `json:"clusterRole,omitempty"`
 }
 
 // AccountStatus defines the observed state of Account
 type AccountStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// the access token for the account
 	Token string `json:"token,omitempty"`
 }
 
