@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	k8srbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -35,11 +36,16 @@ import (
 type AccountReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+	Log    logr.Logger
 }
 
 //+kubebuilder:rbac:groups=rbac.poorops.com,resources=accounts,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.poorops.com,resources=accounts/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=rbac.poorops.com,resources=accounts/finalizers,verbs=update
+
+//+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch
+//+kubebuilder:rbac:groups="",resources=serviceaccounts;secrets,verbs=*
+//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles;rolebindings,verbs=*
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -50,11 +56,10 @@ type AccountReconciler struct {
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.0/pkg/reconcile
+
 func (r *AccountReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
-
-	log.Log.WithValues("account", req.NamespacedName)
-
+	//_ = log.FromContext(ctx, "account", req.NamespacedName)
+	log.Log.Info("info info")
 	account := &rbacv1.Account{}
 	if err := r.Get(ctx, req.NamespacedName, account); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -135,7 +140,7 @@ func (r *AccountReconciler) HandleSecret(ctx context.Context, saName string, acc
 		account.Status.Token = string(secret.Data["token"])
 
 		if err := r.Status().Update(ctx, account); err != nil {
-			log.Log.Error(err, "unable to update Account status")
+			r.Log.Error(err, "unable to update Account status")
 			return err
 		}
 	}
@@ -168,18 +173,18 @@ func (r *AccountReconciler) HandleRoleBinding(ctx context.Context, owner client.
 }
 
 func (r *AccountReconciler) MakeReference(ctx context.Context, owner, controlled client.Object) (controllerutil.OperationResult, error) {
-	log.Log.Info("start to create obj: " + controlled.GetName())
+	r.Log.Info("start to create obj: " + controlled.GetName())
 	if err := ctrl.SetControllerReference(owner, controlled, r.Scheme); err != nil {
-		log.Log.Error(err, "unable to set ownerReference, controlled: "+controlled.GetName())
+		r.Log.Error(err, "unable to set ownerReference, controlled: "+controlled.GetName())
 		return "", err
 	}
 
 	result, err := ctrl.CreateOrUpdate(ctx, r.Client, controlled, func() error { return nil })
 	if err != nil {
-		log.Log.Error(err, "unable to create or update obj: "+controlled.GetName())
+		r.Log.Error(err, "unable to create or update obj: "+controlled.GetName())
 		return "", err
 	}
-	log.Log.Info(controlled.GetName() + " " + string(result))
+	r.Log.Info(controlled.GetName() + " " + string(result))
 
 	return result, nil
 }
@@ -204,7 +209,7 @@ func (r *AccountReconciler) HandleClusterRole(ctx context.Context, account *rbac
 		}
 	} else {
 		if err := r.Get(ctx, types.NamespacedName{Name: account.Spec.ClusterRole}, clusterRole); err != nil {
-			log.Log.Error(err, "unable to fetch ClusterRole: "+account.Spec.ClusterRole)
+			r.Log.Error(err, "unable to fetch ClusterRole: "+account.Spec.ClusterRole)
 			return nil, err
 		}
 	}
@@ -233,7 +238,7 @@ func (r *AccountReconciler) DeleteExcludeRoleBinding(ctx context.Context, specNa
 			}
 			if err := r.Delete(ctx, binding); err != nil {
 				if !errors.IsNotFound(err) {
-					log.Log.Error(err, "delete role binding err, role binding: "+binding.Name)
+					r.Log.Error(err, "delete role binding err, role binding: "+binding.Name)
 					return err
 				}
 			}
